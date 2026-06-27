@@ -52,7 +52,8 @@ blockquote {
 }
 
 // DT 테이블 — 컴팩트하고 깔끔하게
-table.dataTable { font-size: .82rem; }
+table.dataTable { font-size: .8rem; }
+table.dataTable tbody td { line-height: 1.2; }
 table.dataTable thead th {
   background: #f5f7f9;
   color: #2c3e50;
@@ -61,5 +62,5 @@ table.dataTable thead th {
 }
 table.dataTable.stripe tbody tr.odd { background: #fafbfc; }
 table.dataTable tbody tr:hover { background: #eef4fb !important; }
-table.dataTable td, table.dataTable th { padding: 4px 9px !important; }
+table.dataTable td, table.dataTable th { padding: 3px 9px !important; }
 table.dataTable thead th { position: sticky; top: 0; z-index: 2; }
