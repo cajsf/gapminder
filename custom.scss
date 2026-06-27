@@ -61,3 +61,5 @@ table.dataTable thead th {
 }
 table.dataTable.stripe tbody tr.odd { background: #fafbfc; }
 table.dataTable tbody tr:hover { background: #eef4fb !important; }
+table.dataTable td, table.dataTable th { padding: 4px 9px !important; }
+table.dataTable thead th { position: sticky; top: 0; z-index: 2; }

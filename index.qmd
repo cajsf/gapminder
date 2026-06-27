@@ -93,7 +93,7 @@ d07$resid <- residuals(fit07); r2_07 <- summary(fit07)$r.squared
 
 ```{r}
 #| content: valuebox
-#| title: "2007 기대수명 (인구가중 · 평균적 한 사람)"
+#| title: "2007 기대수명 (인구가중)"
 list(icon = "heart-pulse-fill", color = "success", value = sprintf("%.1f세", life_wt_07))
 ```
 
@@ -131,12 +131,12 @@ plot_ly(ts, x = ~year) |>
       hovermode = "x unified")
 ```
 
-> **단순평균은 세계를 낙관적으로 왜곡한다.** 인구가 많은 중·저소득국이 과소대표되기 때문에, '평균적인 한 사람'이 실제 경험하는 인구가중 수명이 더 정확하다.
+> **단순평균은 세계를 낙관적으로 왜곡한다.** 인구가 많은 중·저소득국이 과소대표되기 때문에, '평균적인 한 사람'이 경험하는 인구가중 수명이 더 정확하다. 한편 국가 간 수명 격차(CV)는 **`r sprintf("%.3f→%.3f", cv0, cv1)`** 로 수렴했으나, **`r cv_min_year`년 최저점** 이후 HIV·체제전환 충격으로 일시 재확대됐다.
 
 ### Column {width=40%}
 
 ```{r}
-#| title: "국가 간 기대수명 격차 (변동계수 CV)"
+#| title: "국가 간 기대수명 격차 (연도별 분산 지표)"
 dt(data.frame(
      연도 = ts$year,
      SD = round(ts$life_sd, 2),
@@ -144,10 +144,6 @@ dt(data.frame(
      지니_GDP = round(ts$gini, 3)),
    colnames = c("연도", "수명 SD", "수명 CV", "GDP 지니"))
 ```
-
-::: {.card title="인사이트: 수렴은 단조롭지 않다"}
-기대수명 변동계수 CV는 **`r sprintf("%.3f(%d) → %.3f(%d)", cv0, y0, cv1, y1)`** 로 전반적으로 **수렴**했으나, **`r cv_min_year`년 최저점** 이후 1990년대 HIV·체제전환 충격으로 일시 **재확대**되었다.
-:::
 
 # 수렴 vs 발산
 
@@ -227,8 +223,8 @@ df_anim <- df
 df_anim$pop_m <- df_anim$pop / 1e6
 plot_ly(df_anim, x = ~gdpPercap, y = ~lifeExp, size = ~pop, color = ~continent,
         colors = cont_pal, frame = ~year, ids = ~country,
-        type = "scatter", mode = "markers", sizes = c(6, 60),
-        marker = list(sizemode = "area", opacity = 0.75, line = list(width = 0.5, color = "white")),
+        type = "scatter", mode = "markers", sizes = c(8, 70),
+        marker = list(sizemode = "area", opacity = 0.85, line = list(width = 0.8, color = "white")),
         text = ~paste0("<b>", country, "</b> (", continent, ")<br>",
                        "기대수명: ", round(lifeExp, 1), "세<br>",
                        "1인당 GDP: $", comma(round(gdpPercap)), "<br>",
@@ -351,6 +347,8 @@ plot_ly(d07, x = ~continent, y = ~lifeExp, color = ~continent, colors = cont_pal
       showlegend = FALSE)
 ```
 
+> **대륙 평균은 위험하다.** 아시아는 내부 소득 격차가 **최대 50배**(일본·쿠웨이트 ↔ 아프가니스탄·미얀마)로 '아시아 평균'은 분석적 의미가 거의 없다. 반면 유럽은 동질적이다. 충격 궤적은 르완다 학살·HIV·걸프전 등 실제 사건과 정확히 일치해 데이터의 신뢰성을 입증한다.
+
 ### Column {width=38%}
 
 ```{r}
@@ -363,7 +361,3 @@ het <- df[df$year == y1, ] |> group_by(continent) |> summarise(
   .groups = "drop") |> rename(대륙 = continent)
 dt(het, colnames = c("대륙", "국가수", "수명 최소", "수명 최대", "GDP 최대/최소"))
 ```
-
-::: {.card title="인사이트: 대륙 평균은 위험하다"}
-아시아는 내부 소득 격차가 **최대 50배**(일본·쿠웨이트 ↔ 아프가니스탄·미얀마)로, '아시아 평균'은 분석적 의미가 거의 없다. 반면 유럽은 동질적이다. 충격 궤적은 르완다 학살·HIV·걸프전 같은 실제 사건과 정확히 일치해 데이터의 신뢰성을 입증한다.
-:::
