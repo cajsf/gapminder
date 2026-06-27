@@ -45,9 +45,10 @@ ply <- function(p, ...) {
     config(displayModeBar = FALSE, locale = "ko")
 }
 dt <- function(d, ...) {
-  datatable(d, rownames = FALSE, class = "compact stripe hover row-border",
-            options = list(dom = "t", paging = FALSE, scrollY = "100%",
-                           scrollCollapse = TRUE, ordering = TRUE,
+  datatable(d, rownames = FALSE, fillContainer = TRUE,
+            class = "compact stripe hover row-border",
+            options = list(dom = "t", paging = FALSE, ordering = TRUE,
+                           scrollCollapse = TRUE,
                            columnDefs = list(list(className = "dt-center", targets = "_all"))),
             ...)
 }
@@ -233,7 +234,8 @@ plot_ly(df_anim, x = ~gdpPercap, y = ~lifeExp, size = ~pop, color = ~continent,
                        "1인당 GDP: $", comma(round(gdpPercap)), "<br>",
                        "인구: ", round(pop_m, 1), "백만"),
         hovertemplate = "%{text}<extra></extra>") |>
-  ply(xaxis = list(type = "log", title = "1인당 GDP (로그 척도, $)", gridcolor = "#eef1f4"),
+  ply(xaxis = list(type = "log", title = "1인당 GDP (로그 척도, $)", tickprefix = "$",
+                   gridcolor = "#eef1f4"),
       yaxis = list(title = "기대수명 (세)", range = c(25, 87), gridcolor = "#eef1f4"),
       legend = list(title = list(text = "<b>대륙</b>"), orientation = "v")) |>
   animation_opts(900, easing = "cubic-in-out", redraw = FALSE) |>
@@ -289,3 +291,79 @@ dt(data.frame(국가 = champ$country, 대륙 = as.character(champ$continent),
               GDP_1952 = round(champ$gdpPercap_0), GDP_2007 = round(champ$gdpPercap_1),
               성장률 = sprintf("%.1f%%", champ$cagr)))
 ```
+
+# 충격과 이질성
+
+## Row {height=56%}
+
+### Column {width=62%}
+
+```{r}
+#| title: "역사적 충격의 지문 — 기대수명 궤적"
+watch <- c("Rwanda", "Cambodia", "Zimbabwe", "Botswana", "China")
+watch <- watch[watch %in% df$country]
+cols_w <- c(HL1, "#F28E2B", "#B07AA1", "#59A14F", HL2)
+p <- plot_ly()
+for (i in seq_along(watch)) {
+  s <- df[df$country == watch[i], ]; s <- s[order(s$year), ]
+  p <- add_trace(p, x = s$year, y = s$lifeExp, name = watch[i],
+                 type = "scatter", mode = "lines+markers",
+                 line = list(color = cols_w[i], width = 2.8),
+                 marker = list(size = 6, color = cols_w[i]),
+                 hovertemplate = paste0(watch[i], "<br>%{x}년 · %{y:.1f}세<extra></extra>"))
+}
+rw <- df[df$country == "Rwanda" & df$year == 1992, "lifeExp"]
+ply(p, xaxis = list(title = "", gridcolor = "#eef1f4"),
+    yaxis = list(title = "기대수명 (세)", gridcolor = "#eef1f4", range = c(20, 80)),
+    legend = list(orientation = "h", y = -0.18),
+    annotations = list(
+      list(x = 1994, y = if (length(rw)) rw else 27, text = "르완다 학살 (1994)",
+           showarrow = TRUE, arrowhead = 2, ax = 40, ay = -30,
+           font = list(color = HL1, size = 11)),
+      list(x = 2002, y = 40, text = "남부아프리카 HIV/AIDS",
+           showarrow = FALSE, font = list(color = "#B07AA1", size = 11))))
+```
+
+### Column {width=38%}
+
+```{r}
+#| title: "기대수명 최대 급락 자동 탐지 (5년 간)"
+ord <- df[order(df$country, df$year), ]
+ord$d_life <- ave(ord$lifeExp, ord$country, FUN = function(x) c(NA, diff(x)))
+drop <- head(ord[order(ord$d_life), c("country", "year", "lifeExp", "d_life")], 10)
+dt(data.frame(국가 = drop$country, 연도 = drop$year,
+              기대수명 = round(drop$lifeExp, 1), 변화 = round(drop$d_life, 1)),
+   colnames = c("국가", "연도", "기대수명", "수명 변화"))
+```
+
+## Row {height=44%}
+
+### Column {width=62%}
+
+```{r}
+#| title: "대륙 내 이질성 — '평균'이 숨기는 분산 (2007)"
+plot_ly(d07, x = ~continent, y = ~lifeExp, color = ~continent, colors = cont_pal,
+        type = "box", boxpoints = "all", jitter = 0.4, pointpos = 0,
+        marker = list(size = 4, opacity = 0.55),
+        line = list(width = 1.5),
+        hovertemplate = "%{x}<br>%{y:.1f}세<extra></extra>") |>
+  ply(xaxis = list(title = ""), yaxis = list(title = "기대수명 (세)", gridcolor = "#eef1f4"),
+      showlegend = FALSE)
+```
+
+### Column {width=38%}
+
+```{r}
+#| title: "대륙별 분포 요약 (2007)"
+het <- df[df$year == y1, ] |> group_by(continent) |> summarise(
+  국가수 = n(),
+  수명_최소 = round(min(lifeExp), 1),
+  수명_최대 = round(max(lifeExp), 1),
+  GDP_최대최소비 = round(max(gdpPercap) / min(gdpPercap), 1),
+  .groups = "drop") |> rename(대륙 = continent)
+dt(het, colnames = c("대륙", "국가수", "수명 최소", "수명 최대", "GDP 최대/최소"))
+```
+
+::: {.card title="인사이트: 대륙 평균은 위험하다"}
+아시아는 내부 소득 격차가 **최대 50배**(일본·쿠웨이트 ↔ 아프가니스탄·미얀마)로, '아시아 평균'은 분석적 의미가 거의 없다. 반면 유럽은 동질적이다. 충격 궤적은 르완다 학살·HIV·걸프전 같은 실제 사건과 정확히 일치해 데이터의 신뢰성을 입증한다.
+:::
